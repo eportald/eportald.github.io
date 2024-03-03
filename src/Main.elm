@@ -15,13 +15,13 @@ import Tuple exposing (pair, first, second)
 import Yaml.Decode exposing (fromString, list, dict, string, field)
 import Markdown.Parser as Markdown
 import Markdown.Renderer
-import Color exposing (toCssString, rgb255)
+import Color exposing (toCssString, hsl)
 
 variance = 20
 
-type Msg = YamlLoaded (Result Http.Error String) | MarkdownLoaded (Result Http.Error String) | RandomColour {r: Int, g: Int, b: Int} | None
+type Msg = YamlLoaded (Result Http.Error String) | MarkdownLoaded (Result Http.Error String) | RandomColour Float | None
 
-type alias Model = { post: String, post_addr: String, email: List String, colour: {r: Int, g: Int, b: Int} }
+type alias Model = { post: String, post_addr: String, email: List String, colour: Float }
 
 decoder : Model -> Yaml.Decode.Decoder Model
 decoder model =
@@ -37,12 +37,12 @@ subscriptions model = Sub.none
 cap_value: Int -> Int
 cap_value = (min 255) >> (max 0)
 
-colour_gen = Random.map3 (\r g b -> {r = r, g = g, b = b}) (Random.int -variance variance) (Random.int -variance variance) (Random.int -variance variance)
+colour_gen = Random.float 0 1
 
 init : () -> (Model, Cmd Msg)
 init _ =
   let
-    initialState = { post = "", post_addr = "", email = ["sobol", ".", "daniil", "@", "gmail", ".", "com"], colour = {r = 240, g = 240, b = 240} }
+    initialState = { post = "", post_addr = "", email = ["sobol", ".", "daniil", "@", "gmail", ".", "com"], colour = 1 }
     commands = Cmd.batch [
       Random.generate RandomColour colour_gen,
       Http.get {url = "../contents.yaml", expect = Http.expectString YamlLoaded}
@@ -67,7 +67,7 @@ update msg model =
           ({ model | post = post_txt }, Cmd.none)
         Err e -> (model, Cmd.none)
     RandomColour colour ->
-      ({ model | colour = {r = cap_value (colour.r + model.colour.r), g = cap_value (colour.g + model.colour.g), b = (cap_value colour.b + model.colour.b)} }, Cmd.none)
+      ({ model | colour = colour }, Cmd.none)
     None -> (model, Cmd.none)
 
 view : Model -> Document Msg
@@ -99,7 +99,7 @@ deadEndsToString deadEnds =
         |> String.join "\n"
 
 bg_style colour = [
-  Attr.style "background-color" (rgb255 colour.r colour.g colour.b |> toCssString),
+  Attr.style "background-color" (hsl colour 0.3 0.9 |> toCssString),
   Attr.style "padding" "0",
   Attr.style "margin" "0",
   Attr.style "display" "block",
