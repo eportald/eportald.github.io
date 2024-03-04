@@ -71,7 +71,7 @@ update msg model =
     None -> (model, Cmd.none)
 
 view : Model -> Document Msg
-view model = {title = "libportalnet", body = body model}
+view model = {title = "EPORTALD", body = body model}
 
 body : Model -> List (Html msg)
 body model =
